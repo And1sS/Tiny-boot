@@ -26,6 +26,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
+import java.util.stream.IntStream;
 
 // TODO: refactor this
 public class RepositoryInvocationHandler implements InvocationHandler {
@@ -151,7 +152,6 @@ public class RepositoryInvocationHandler implements InvocationHandler {
         return repositoryMethodParser.parseMethod(method, entityClass, args);
     }
 
-    @SuppressWarnings("unchecked")
     private String prepareQueryStringByQueryAnnotationParameter(Query queryAnnotation, Method method, Object[] args) {
         final String queryStringTemplate = queryAnnotation.value();
         if (queryStringTemplate == null || queryStringTemplate.isEmpty()) {
@@ -163,26 +163,26 @@ public class RepositoryInvocationHandler implements InvocationHandler {
             return queryStringTemplate;
         }
 
-        String queryString = queryStringTemplate;
         final Parameter[] methodParameters = method.getParameters();
-
-        for (int i = 0; i < args.length; i++) {
-            final Parameter parameter = methodParameters[i];
-            final Param parameterAnnotation = parameter.getAnnotation(Param.class);
-            final String parameterAnnotationValue = parameterAnnotation != null ? parameterAnnotation.value() : null;
-            final String parameterAlias = parameterAnnotationValue != null
-                    ? parameterAnnotationValue
-                    : parameter.getName();
-
-            final Object parameterValue = args[i];
-            final Class<?> parameterClass = parameterValue.getClass();
-            final JdbcTypeConverter<Object> parameterTypeConverter =
-                    (JdbcTypeConverter<Object>) converterRegistry.getConverterForType(parameterClass);
-            final String parameterStringValue = parameterTypeConverter.convertToString(parameterValue);
-
-            queryString = queryString.replace(String.format(":%s", parameterAlias), parameterStringValue);
-        }
-
+        String queryString = queryStringTemplate;
+        IntStream.range(0, args.length)
+                .forEach((idx) -> setQueryStringTemplateParameter(queryString, methodParameters[idx], args[idx]));
         return queryString;
+    }
+
+    @SuppressWarnings("unchecked")
+    private String setQueryStringTemplateParameter(String queryString, Parameter parameter, Object parameterValue) {
+        final Param parameterAnnotation = parameter.getAnnotation(Param.class);
+        final String parameterAnnotationValue = parameterAnnotation != null ? parameterAnnotation.value() : null;
+        final String parameterAlias = parameterAnnotationValue != null
+                ? parameterAnnotationValue
+                : parameter.getName();
+
+        final Class<?> parameterClass = parameterValue.getClass();
+        final JdbcTypeConverter<Object> parameterTypeConverter =
+                (JdbcTypeConverter<Object>) converterRegistry.getConverterForType(parameterClass);
+        final String parameterStringValue = parameterTypeConverter.convertToString(parameterValue);
+
+        return queryString.replace(String.format(":%s", parameterAlias), parameterStringValue);
     }
 }
