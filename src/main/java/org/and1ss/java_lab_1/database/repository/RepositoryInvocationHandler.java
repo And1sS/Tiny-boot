@@ -165,8 +165,9 @@ public class RepositoryInvocationHandler implements InvocationHandler {
 
         final Parameter[] methodParameters = method.getParameters();
         String queryString = queryStringTemplate;
-        IntStream.range(0, args.length)
-                .forEach((idx) -> setQueryStringTemplateParameter(queryString, methodParameters[idx], args[idx]));
+        for (int i = 0; i < args.length; i++) {
+            queryString = setQueryStringTemplateParameter(queryString, methodParameters[i], args[i]);
+        }
         return queryString;
     }
 
