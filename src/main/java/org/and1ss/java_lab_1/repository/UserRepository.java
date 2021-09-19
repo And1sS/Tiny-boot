@@ -16,7 +16,7 @@ public interface UserRepository {
 
     @Query("INSERT INTO usr (id, login, first_name, last_name, password) VALUES" +
             " (:id, ':login', ':firstName', ':lastName', ':password')")
-    void insert(Long id, String login, String firstName, String lastName, String password);
+    void save(Long id, String login, String firstName, String lastName, String password);
 
     @Query("select nextval('public.usr_sequence')")
     SequenceWrapper getNextId();

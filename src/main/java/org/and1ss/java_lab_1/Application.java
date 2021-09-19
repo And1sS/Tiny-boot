@@ -3,6 +3,10 @@ package org.and1ss.java_lab_1;
 import org.and1ss.java_lab_1.database.connection.JdbcConnectionFactory;
 import org.and1ss.java_lab_1.database.connection.JdbcConnectionOptions;
 import org.and1ss.java_lab_1.database.connection.JdbcFixedConnectionPoolFactoryImpl;
+import org.and1ss.java_lab_1.database.converters.JdbcLongTypeConverter;
+import org.and1ss.java_lab_1.database.converters.JdbcStringTypeConverter;
+import org.and1ss.java_lab_1.database.converters.JdbcTypeConverterRegistry;
+import org.and1ss.java_lab_1.database.converters.JdbcTypeConverterRegistryImpl;
 import org.and1ss.java_lab_1.database.mapper.ResultSetMapper;
 import org.and1ss.java_lab_1.database.repository.RepositoryInvocationHandler;
 import org.and1ss.java_lab_1.database.statement.JdbcStatementFactory;
@@ -16,7 +20,6 @@ import org.and1ss.java_lab_1.service.impl.UserServiceImpl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Proxy;
-import java.sql.SQLException;
 import java.util.Properties;
 
 public class Application {
@@ -36,11 +39,18 @@ public class Application {
         final JdbcConnectionFactory jdbcConnectionFactory =
                 new JdbcFixedConnectionPoolFactoryImpl(10, jdbcConnectionOptions);
         final JdbcStatementFactory jdbcStatementFactory = new JdbcStatementFactoryImpl(jdbcConnectionFactory);
+        final JdbcTypeConverterRegistry jdbcTypeConverterRegistry = new JdbcTypeConverterRegistryImpl()
+                .registerTypeConverter(new JdbcStringTypeConverter())
+                .registerTypeConverter(new JdbcLongTypeConverter());
 
         final UserRepository userRepository = (UserRepository) Proxy.newProxyInstance(
                 UserRepository.class.getClassLoader(),
                 new Class[]{UserRepository.class},
-                new RepositoryInvocationHandler(jdbcStatementFactory, new ResultSetMapper()));
+                new RepositoryInvocationHandler(
+                        jdbcStatementFactory,
+                        new ResultSetMapper(jdbcTypeConverterRegistry),
+                        (a, b, c) -> null,
+                        jdbcTypeConverterRegistry));
 
         final UserService transactionalUserService = TransactionalUtil.wrapInTransaction(
                 new UserServiceImpl(userRepository), UserService.class, jdbcConnectionFactory);

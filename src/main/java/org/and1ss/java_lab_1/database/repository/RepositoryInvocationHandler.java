@@ -1,8 +1,10 @@
 package org.and1ss.java_lab_1.database.repository;
 
-import org.and1ss.java_lab_1.database.annotations.Param;
 import org.and1ss.java_lab_1.database.annotations.Entity;
+import org.and1ss.java_lab_1.database.annotations.Param;
 import org.and1ss.java_lab_1.database.annotations.Query;
+import org.and1ss.java_lab_1.database.converters.JdbcTypeConverter;
+import org.and1ss.java_lab_1.database.converters.JdbcTypeConverterRegistry;
 import org.and1ss.java_lab_1.database.mapper.ResultSetMapper;
 import org.and1ss.java_lab_1.database.statement.JdbcStatementFactory;
 
@@ -16,7 +18,6 @@ import java.lang.reflect.Type;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -31,18 +32,23 @@ public class RepositoryInvocationHandler implements InvocationHandler {
 
     final JdbcStatementFactory jdbcStatementFactory;
     final ResultSetMapper resultSetMapper;
+    final RepositoryMethodParser repositoryMethodParser;
+    final JdbcTypeConverterRegistry converterRegistry;
 
-    public RepositoryInvocationHandler(JdbcStatementFactory jdbcStatementFactory, ResultSetMapper resultSetMapper) {
+    public RepositoryInvocationHandler(JdbcStatementFactory jdbcStatementFactory,
+                                       ResultSetMapper resultSetMapper,
+                                       RepositoryMethodParser repositoryMethodParser,
+                                       JdbcTypeConverterRegistry jdbcTypeConverterRegistry) {
         this.jdbcStatementFactory = Objects.requireNonNull(jdbcStatementFactory);
         this.resultSetMapper = Objects.requireNonNull(resultSetMapper);
+        this.repositoryMethodParser = Objects.requireNonNull(repositoryMethodParser);
+        this.converterRegistry = Objects.requireNonNull(jdbcTypeConverterRegistry);
     }
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        final List<Parameter> parameters = Arrays.asList(method.getParameters());
         Type type = method.getGenericReturnType();
 
-        System.out.println("Return type: " + type.getTypeName());
         if (type instanceof ParameterizedType) {
             return executeQueryWithParametrizedReturnType(method, (ParameterizedType) type, args);
         } else {
@@ -53,8 +59,7 @@ public class RepositoryInvocationHandler implements InvocationHandler {
                 return executeQueryWithEntityReturnType(method, methodReturnType, args);
             } else if (methodReturnType.equals(Void.TYPE)) {
                 final String query = generateSqlQueryForMethod(method, Void.TYPE, args);
-                jdbcStatementFactory.createStatement().executeUpdate(query);
-                return null;
+                return jdbcStatementFactory.createStatement().executeUpdate(query);
             }
             throw new IllegalArgumentException(
                     "Repositories can return only Entities or projections and their collections, optionals");
@@ -101,16 +106,18 @@ public class RepositoryInvocationHandler implements InvocationHandler {
 
         final String query = generateSqlQueryForMethod(method, returnType, args);
         final ResultSet resultSet = jdbcStatementFactory.createStatement().executeQuery(query);
+
         if (resultSet.next()) {
             try {
                 final Object entityObject = returnType.getConstructor().newInstance();
                 return resultSetMapper.map(entityObject, resultSet);
             } catch (NoSuchMethodException e) {
-                throw new RuntimeException(String.format(
-                        "Entities must have public no arguments constructor, but entity %s does not have it", returnType));
+                throw new RuntimeException(
+                        String.format(
+                                "Entities must have public no arguments constructor, but entity %s does not have it",
+                                returnType));
             }
         }
-
         return null;
     }
 
@@ -127,8 +134,10 @@ public class RepositoryInvocationHandler implements InvocationHandler {
                 final Object entityObject = returnType.getConstructor().newInstance();
                 resultList.add(resultSetMapper.map(entityObject, resultSet));
             } catch (NoSuchMethodException e) {
-                throw new RuntimeException(String.format(
-                        "Entities must have public no arguments constructor, but entity %s does not have it", returnType));
+                throw new RuntimeException(
+                        String.format(
+                                "Entities must have public no arguments constructor, but entity %s does not have it",
+                                returnType));
             }
         }
 
@@ -136,49 +145,44 @@ public class RepositoryInvocationHandler implements InvocationHandler {
     }
 
     private String generateSqlQueryForMethod(Method method, Class<?> entityClass, Object[] args) {
-        final String methodName = method.getName();
-
-        // find
-        final int byIndex = methodName.indexOf("By");
-        final Query queryAnnotation = method.getAnnotation(Query.class);
-
-        if (queryAnnotation != null) {
-            final String queryStringTemplate = queryAnnotation.value();
-            if (queryStringTemplate == null || queryStringTemplate.isEmpty()) {
-                throw new RuntimeException(
-                        String.format("Query string must not be empty, but empty in method %s", method));
-            }
-            String queryString = queryStringTemplate;
-            final Parameter[] methodParameters = method.getParameters();
-            if (args == null) {
-                return queryString;
-            }
-            for (int i = 0; i < args.length; i++) {
-                final Parameter parameter = methodParameters[i];
-                final Object parameterValue = args[i];
-
-                final Param parameterAnnotation = parameter.getAnnotation(Param.class);
-                final String parameterName = parameter.getName();
-
-                // TODO: add check
-                final String parameterAlias = parameterName != null ? parameterName : parameterAnnotation.value();
-
-                // TODO: add type converter
-                queryString = queryString.replace(String.format(":%s", parameterAlias), parameterValue.toString());
-            }
-            System.out.println(queryString);
-            return queryString;
-//                    Arrays.stream(method.getParameters())
-//                            .forEach(parameter -> ));
-        } else if (methodName.startsWith("find")) {
-
-        } else if (methodName.startsWith("save")) {
-
-        } else if (methodName.startsWith("update")) {
-
-        } else if (methodName.startsWith("delete")) {
-
+        if (method.isAnnotationPresent(Query.class)) {
+            return prepareQueryStringByQueryAnnotationParameter(method.getAnnotation(Query.class), method, args);
         }
-        return "SELECT id, login, first_name, last_name, password FROM usr WHERE id = 1";
+        return repositoryMethodParser.parseMethod(method, entityClass, args);
+    }
+
+    @SuppressWarnings("unchecked")
+    private String prepareQueryStringByQueryAnnotationParameter(Query queryAnnotation, Method method, Object[] args) {
+        final String queryStringTemplate = queryAnnotation.value();
+        if (queryStringTemplate == null || queryStringTemplate.isEmpty()) {
+            throw new RuntimeException(
+                    String.format("Query string must not be empty, but empty in method %s", method));
+        }
+
+        if (args == null) {
+            return queryStringTemplate;
+        }
+
+        String queryString = queryStringTemplate;
+        final Parameter[] methodParameters = method.getParameters();
+
+        for (int i = 0; i < args.length; i++) {
+            final Parameter parameter = methodParameters[i];
+            final Param parameterAnnotation = parameter.getAnnotation(Param.class);
+            final String parameterAnnotationValue = parameterAnnotation != null ? parameterAnnotation.value() : null;
+            final String parameterAlias = parameterAnnotationValue != null
+                    ? parameterAnnotationValue
+                    : parameter.getName();
+
+            final Object parameterValue = args[i];
+            final Class<?> parameterClass = parameterValue.getClass();
+            final JdbcTypeConverter<Object> parameterTypeConverter =
+                    (JdbcTypeConverter<Object>) converterRegistry.getConverterForType(parameterClass);
+            final String parameterStringValue = parameterTypeConverter.convertToString(parameterValue);
+
+            queryString = queryString.replace(String.format(":%s", parameterAlias), parameterStringValue);
+        }
+
+        return queryString;
     }
 }
