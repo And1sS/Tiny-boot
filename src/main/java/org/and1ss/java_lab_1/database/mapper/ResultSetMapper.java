@@ -2,6 +2,7 @@ package org.and1ss.java_lab_1.database.mapper;
 
 import org.and1ss.java_lab_1.database.Column;
 import org.and1ss.java_lab_1.database.Entity;
+import org.and1ss.java_lab_1.database.Transient;
 
 import java.lang.reflect.Field;
 import java.sql.ResultSet;
@@ -24,6 +25,11 @@ public class ResultSetMapper {
 
     private void mapField(Object mapTo, Field field, ResultSet resultSet) {
         try {
+            final Transient transientAnnotation = field.getAnnotation(Transient.class);
+            if (transientAnnotation != null) {
+                return;
+            }
+
             final Column columnAnnotation = field.getAnnotation(Column.class);
             if (columnAnnotation != null) {
                 final String columnName = columnAnnotation.name();
@@ -52,19 +58,18 @@ public class ResultSetMapper {
     }
 
     private static String camelToSnakeCase(String str) {
-        String result = "";
-        char c = str.charAt(0);
-        result = result + Character.toLowerCase(c);
+        StringBuilder result = new StringBuilder();
+        result.append(Character.toLowerCase(str.charAt(0)));
 
         for (int i = 1; i < str.length(); i++) {
             char ch = str.charAt(i);
             if (Character.isUpperCase(ch)) {
-                result = result + '_' + Character.toLowerCase(ch);
+                result.append('_').append(Character.toLowerCase(ch));
             } else {
-                result = result + ch;
+                result.append(ch);
             }
         }
 
-        return result;
+        return result.toString();
     }
 }
