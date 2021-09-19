@@ -1,4 +1,4 @@
-package org.and1ss.java_lab_1.database;
+package org.and1ss.java_lab_1.database.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -7,5 +7,5 @@ import java.lang.annotation.Target;
 
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Transient {
+public @interface Id {
 }

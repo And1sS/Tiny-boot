@@ -4,8 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.and1ss.java_lab_1.database.Column;
-import org.and1ss.java_lab_1.database.Entity;
+import org.and1ss.java_lab_1.database.annotations.Column;
+import org.and1ss.java_lab_1.database.annotations.Entity;
 
 @Data
 @Builder

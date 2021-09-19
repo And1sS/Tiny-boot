@@ -1,5 +1,6 @@
 package org.and1ss.java_lab_1.database.transaction;
 
+import org.and1ss.java_lab_1.database.annotations.Transactional;
 import org.and1ss.java_lab_1.database.connection.JdbcConnectionFactory;
 
 import java.lang.reflect.InvocationHandler;

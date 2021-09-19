@@ -1,8 +1,8 @@
 package org.and1ss.java_lab_1.database.mapper;
 
-import org.and1ss.java_lab_1.database.Column;
-import org.and1ss.java_lab_1.database.Entity;
-import org.and1ss.java_lab_1.database.Transient;
+import org.and1ss.java_lab_1.database.annotations.Column;
+import org.and1ss.java_lab_1.database.annotations.Entity;
+import org.and1ss.java_lab_1.database.annotations.Transient;
 
 import java.lang.reflect.Field;
 import java.sql.ResultSet;
@@ -17,9 +17,7 @@ public class ResultSetMapper {
             throw new IllegalArgumentException("Object to map from should be entity, but provided one is not");
         }
 
-        Arrays.stream(clazz.getDeclaredFields())
-                .forEach(field -> mapField(mapTo, field, resultSet));
-
+        Arrays.stream(clazz.getDeclaredFields()).forEach(field -> mapField(mapTo, field, resultSet));
         return mapTo;
     }
 

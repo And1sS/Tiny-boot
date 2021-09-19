@@ -1,8 +1,8 @@
 package org.and1ss.java_lab_1.database.repository;
 
-import org.and1ss.java_lab_1.dao.Param;
-import org.and1ss.java_lab_1.database.Entity;
-import org.and1ss.java_lab_1.database.Query;
+import org.and1ss.java_lab_1.database.annotations.Param;
+import org.and1ss.java_lab_1.database.annotations.Entity;
+import org.and1ss.java_lab_1.database.annotations.Query;
 import org.and1ss.java_lab_1.database.mapper.ResultSetMapper;
 import org.and1ss.java_lab_1.database.statement.JdbcStatementFactory;
 
@@ -53,7 +53,8 @@ public class RepositoryInvocationHandler implements InvocationHandler {
                 return executeQueryWithEntityReturnType(method, methodReturnType, args);
             } else if (methodReturnType.equals(Void.TYPE)) {
                 final String query = generateSqlQueryForMethod(method, Void.TYPE, args);
-                jdbcStatementFactory.createStatement().executeQuery(query);
+                jdbcStatementFactory.createStatement().executeUpdate(query);
+                return null;
             }
             throw new IllegalArgumentException(
                     "Repositories can return only Entities or projections and their collections, optionals");
@@ -149,6 +150,9 @@ public class RepositoryInvocationHandler implements InvocationHandler {
             }
             String queryString = queryStringTemplate;
             final Parameter[] methodParameters = method.getParameters();
+            if (args == null) {
+                return queryString;
+            }
             for (int i = 0; i < args.length; i++) {
                 final Parameter parameter = methodParameters[i];
                 final Object parameterValue = args[i];
