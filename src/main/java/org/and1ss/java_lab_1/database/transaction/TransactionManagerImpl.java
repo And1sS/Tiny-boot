@@ -57,10 +57,10 @@ public class TransactionManagerImpl implements TransactionManager {
 
     @Override
     public void rollbackTransaction() {
-      wrapInRuntimeException(() -> connectionFactory.getConnection().rollback());
+        wrapInRuntimeException(() -> connectionFactory.getConnection().rollback());
     }
 
-            private void wrapInRuntimeException(SqlRunnable runnable) {
+    private void wrapInRuntimeException(SqlRunnable runnable) {
         try {
             runnable.run();
         } catch (SQLException e) {
