@@ -7,6 +7,7 @@ import org.and1ss.java_lab_1.database.converters.JdbcTypeConverter;
 import org.and1ss.java_lab_1.database.converters.JdbcTypeConverterRegistry;
 import org.and1ss.java_lab_1.database.mapper.ResultSetMapper;
 import org.and1ss.java_lab_1.database.statement.JdbcStatementFactory;
+import org.and1ss.java_lab_1.database.util.ClassUtil;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
@@ -26,7 +27,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
-import java.util.stream.IntStream;
 
 // TODO: refactor this
 public class RepositoryInvocationHandler implements InvocationHandler {
@@ -40,6 +40,7 @@ public class RepositoryInvocationHandler implements InvocationHandler {
                                        ResultSetMapper resultSetMapper,
                                        RepositoryMethodParser repositoryMethodParser,
                                        JdbcTypeConverterRegistry jdbcTypeConverterRegistry) {
+
         this.jdbcStatementFactory = Objects.requireNonNull(jdbcStatementFactory);
         this.resultSetMapper = Objects.requireNonNull(resultSetMapper);
         this.repositoryMethodParser = Objects.requireNonNull(repositoryMethodParser);
@@ -53,18 +54,20 @@ public class RepositoryInvocationHandler implements InvocationHandler {
         if (type instanceof ParameterizedType) {
             return executeQueryWithParametrizedReturnType(method, (ParameterizedType) type, args);
         } else {
-            Class<?> methodReturnType = method.getReturnType();
-            if (methodReturnType.isInterface()) {
+            Class<?> methodReturnTypeClass = method.getReturnType();
+            if (methodReturnTypeClass.isInterface()) {
                 // handle projections
-            } else if (methodReturnType.isAnnotationPresent(Entity.class)) {
-                return executeQueryWithEntityReturnType(method, methodReturnType, args);
-            } else if (methodReturnType.equals(Void.TYPE)) {
+            } else if (methodReturnTypeClass.isAnnotationPresent(Entity.class)) {
+                return executeQueryWithEntityReturnType(method, methodReturnTypeClass, args);
+            } else if (methodReturnTypeClass.equals(Void.TYPE)) {
                 final String query = generateSqlQueryForMethod(method, Void.TYPE, args);
                 return jdbcStatementFactory.createStatement().executeUpdate(query);
+            } else if (ClassUtil.isPrimitiveOrWrapper(methodReturnTypeClass)){
+                return executeQueryWithPrimitiveReturnType(method, methodReturnTypeClass, args);
             }
-            throw new IllegalArgumentException(
-                    "Repositories can return only Entities or projections and their collections, optionals");
         }
+
+        throw new RuntimeException(String.format("Could not parse query for method %s", method));
     }
 
     private Object executeQueryWithParametrizedReturnType(Method method, ParameterizedType returnType, Object[] args)
@@ -73,7 +76,7 @@ public class RepositoryInvocationHandler implements InvocationHandler {
 
         Class<?> returnTypeClass = (Class<?>) returnType.getRawType();
 
-        if (Optional.class.isAssignableFrom((returnTypeClass))) {
+        if (Optional.class.isAssignableFrom(returnTypeClass)) {
             final Type optionalArgumentType = returnType.getActualTypeArguments()[0];
             final Class<?> optionalArgumentClass = (Class<?>) optionalArgumentType;
             return Optional.ofNullable(executeQueryWithEntityReturnType(method, optionalArgumentClass, args));
@@ -145,6 +148,19 @@ public class RepositoryInvocationHandler implements InvocationHandler {
         return resultList;
     }
 
+    private Object executeQueryWithPrimitiveReturnType(Method method, Class<?> returnType, Object[] args)
+            throws SQLException {
+
+        final String query = generateSqlQueryForMethod(method, returnType, args);
+        final ResultSet resultSet = jdbcStatementFactory.createStatement().executeQuery(query);
+
+        if (resultSet.next()) {
+            final String resultString = resultSet.getString(1);
+            return converterRegistry.getConverterForType(returnType).parseString(resultString);
+        }
+        return null;
+    }
+
     private String generateSqlQueryForMethod(Method method, Class<?> entityClass, Object[] args) {
         if (method.isAnnotationPresent(Query.class)) {
             return prepareQueryStringByQueryAnnotationParameter(method.getAnnotation(Query.class), method, args);
@@ -175,11 +191,9 @@ public class RepositoryInvocationHandler implements InvocationHandler {
     private String setQueryStringTemplateParameter(String queryString, Parameter parameter, Object parameterValue) {
         final Param parameterAnnotation = parameter.getAnnotation(Param.class);
         final String parameterAnnotationValue = parameterAnnotation != null ? parameterAnnotation.value() : null;
-        final String parameterAlias = parameterAnnotationValue != null
-                ? parameterAnnotationValue
-                : parameter.getName();
+        final String parameterAlias = parameterAnnotationValue != null ? parameterAnnotationValue : parameter.getName();
 
-        final Class<?> parameterClass = parameterValue.getClass();
+        final Class<?> parameterClass = parameter.getType();
         final JdbcTypeConverter<Object> parameterTypeConverter =
                 (JdbcTypeConverter<Object>) converterRegistry.getConverterForType(parameterClass);
         final String parameterStringValue = parameterTypeConverter.convertToString(parameterValue);

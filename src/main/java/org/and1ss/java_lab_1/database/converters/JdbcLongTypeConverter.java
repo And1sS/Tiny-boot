@@ -4,7 +4,7 @@ public class JdbcLongTypeConverter implements JdbcTypeConverter<Long> {
 
     @Override
     public String convertToString(Long value) {
-        return value.toString();
+        return value != null ? value.toString() : "NULL";
     }
 
     @Override

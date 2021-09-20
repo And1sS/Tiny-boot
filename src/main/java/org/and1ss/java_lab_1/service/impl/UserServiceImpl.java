@@ -30,12 +30,13 @@ public class UserServiceImpl implements UserService {
 
         final Long userId = user.getId();
         final Long resolvedUserId = userId == null
-                ? userRepository.getNextId().getNextValue()
+                ? userRepository.getNextId()
                 : userId;
 
         userRepository.save(
                 resolvedUserId, user.getLogin(), user.getFirstName(), user.getLastName(), user.getPassword());
         user.setId(resolvedUserId);
+
         return user;
     }
 }

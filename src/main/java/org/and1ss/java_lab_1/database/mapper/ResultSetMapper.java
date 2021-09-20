@@ -39,9 +39,7 @@ public class ResultSetMapper {
 
             final Column columnAnnotation = field.getAnnotation(Column.class);
             final String columnAnnotationName = columnAnnotation != null ? columnAnnotation.name() : null;
-            final String columnName = columnAnnotationName != null
-                    ? columnAnnotationName
-                    : StringUtil.camelToSnakeCase(field.getName());
+            final String columnName = columnAnnotationName != null ? columnAnnotationName : field.getName();
 
             setField(mapTo, field, resultSet.getString(columnName));
         } catch (SQLException | IllegalAccessException e) {

@@ -20,6 +20,7 @@ import org.and1ss.java_lab_1.service.impl.UserServiceImpl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Proxy;
+import java.util.List;
 import java.util.Properties;
 
 public class Application {
@@ -55,8 +56,10 @@ public class Application {
         final UserService transactionalUserService = TransactionalUtil.wrapInTransaction(
                 new UserServiceImpl(userRepository), UserService.class, jdbcConnectionFactory);
 
-        final User userWithoutId = transactionalUserService.findUserById(1L).get();
+        final User userWithoutId = transactionalUserService.findUserById(101L).get();
         userWithoutId.setId(null);
         System.out.println(transactionalUserService.save(userWithoutId));
+
+//        userRepository.findUsersWithName("o").forEach(System.out::println);
     }
 }
