@@ -11,6 +11,8 @@ import org.and1ss.java_lab_1.database.mapper.ResultSetMapper;
 import org.and1ss.java_lab_1.database.repository.RepositoryInvocationHandler;
 import org.and1ss.java_lab_1.database.statement.JdbcStatementFactory;
 import org.and1ss.java_lab_1.database.statement.JdbcStatementFactoryImpl;
+import org.and1ss.java_lab_1.database.transaction.TransactionManager;
+import org.and1ss.java_lab_1.database.transaction.TransactionManagerImpl;
 import org.and1ss.java_lab_1.database.transaction.TransactionalUtil;
 import org.and1ss.java_lab_1.domain.User;
 import org.and1ss.java_lab_1.repository.UserRepository;
@@ -20,7 +22,6 @@ import org.and1ss.java_lab_1.service.impl.UserServiceImpl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Proxy;
-import java.util.List;
 import java.util.Properties;
 
 public class Application {
@@ -40,6 +41,9 @@ public class Application {
         final JdbcConnectionFactory jdbcConnectionFactory =
                 new JdbcFixedConnectionPoolFactoryImpl(10, jdbcConnectionOptions);
         final JdbcStatementFactory jdbcStatementFactory = new JdbcStatementFactoryImpl(jdbcConnectionFactory);
+
+        final TransactionManager transactionManager = new TransactionManagerImpl(jdbcConnectionFactory);
+
         final JdbcTypeConverterRegistry jdbcTypeConverterRegistry = new JdbcTypeConverterRegistryImpl()
                 .registerTypeConverter(new JdbcStringTypeConverter())
                 .registerTypeConverter(new JdbcLongTypeConverter());
@@ -54,12 +58,16 @@ public class Application {
                         jdbcTypeConverterRegistry));
 
         final UserService transactionalUserService = TransactionalUtil.wrapInTransaction(
-                new UserServiceImpl(userRepository), UserService.class, jdbcConnectionFactory);
+                new UserServiceImpl(userRepository),
+                UserService.class,
+                jdbcConnectionFactory,
+                transactionManager);
 
         final User userWithoutId = transactionalUserService.findUserById(101L).get();
         userWithoutId.setId(null);
         System.out.println(transactionalUserService.save(userWithoutId));
+        userRepository.findAllUsers().forEach(System.out::println);
 
-//        userRepository.findUsersWithName("o").forEach(System.out::println);
+        jdbcConnectionFactory.closeOpenedConnections();
     }
 }

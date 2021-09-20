@@ -62,7 +62,7 @@ public class RepositoryInvocationHandler implements InvocationHandler {
             } else if (methodReturnTypeClass.equals(Void.TYPE)) {
                 final String query = generateSqlQueryForMethod(method, Void.TYPE, args);
                 return jdbcStatementFactory.createStatement().executeUpdate(query);
-            } else if (ClassUtil.isPrimitiveOrWrapper(methodReturnTypeClass)){
+            } else if (ClassUtil.isPrimitiveOrWrapper(methodReturnTypeClass)) {
                 return executeQueryWithPrimitiveReturnType(method, methodReturnTypeClass, args);
             }
         }

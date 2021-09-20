@@ -5,7 +5,6 @@ import org.and1ss.java_lab_1.database.annotations.Entity;
 import org.and1ss.java_lab_1.database.annotations.Transient;
 import org.and1ss.java_lab_1.database.converters.JdbcTypeConverter;
 import org.and1ss.java_lab_1.database.converters.JdbcTypeConverterRegistry;
-import org.and1ss.java_lab_1.database.util.StringUtil;
 
 import java.lang.reflect.Field;
 import java.sql.ResultSet;

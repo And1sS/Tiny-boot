@@ -5,9 +5,11 @@ import java.sql.SQLException;
 
 public interface JdbcConnectionFactory {
 
-    Connection getConnection() throws SQLException;
+    Connection getConnection();
 
-    void releaseConnection() throws SQLException;
+    void releaseConnection();
 
     JdbcConnectionOptions getConnectionOptions();
+
+    void closeOpenedConnections();
 }

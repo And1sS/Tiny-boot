@@ -8,10 +8,11 @@ public class TransactionalUtil {
 
     public static <T> T wrapInTransaction(Object toBeProxied,
                                           Class<T> clazz,
-                                          JdbcConnectionFactory jdbcConnectionFactory) {
+                                          JdbcConnectionFactory jdbcConnectionFactory,
+                                          TransactionManager transactionManager) {
         return (T) Proxy.newProxyInstance(
                 clazz.getClassLoader(),
                 new Class[]{clazz},
-                new TransactionalInvocationHandler(toBeProxied, jdbcConnectionFactory));
+                new TransactionalInvocationHandler(toBeProxied, jdbcConnectionFactory, transactionManager));
     }
 }

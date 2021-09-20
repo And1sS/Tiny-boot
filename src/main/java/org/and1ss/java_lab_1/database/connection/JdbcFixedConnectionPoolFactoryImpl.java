@@ -26,14 +26,14 @@ public final class JdbcFixedConnectionPoolFactoryImpl implements JdbcConnectionF
     }
 
     @Override
-    public Connection getConnection() throws SQLException {
+    public Connection getConnection() {
         final Thread currentThread = Thread.currentThread();
         if (usedConnections.containsKey(currentThread)) {
             return usedConnections.get(currentThread);
         }
 
         synchronized (this) {
-             if (!freeConnections.isEmpty()) {
+            if (!freeConnections.isEmpty()) {
                 return acquireConnection();
             } else if (getConnectionsCount() < maxConnections) {
                 final Connection connection = createConnection();
@@ -72,9 +72,13 @@ public final class JdbcFixedConnectionPoolFactoryImpl implements JdbcConnectionF
         return connectionOptions;
     }
 
-    private Connection createConnection() throws SQLException {
-        return DriverManager.getConnection(
-                connectionOptions.getUrl(), connectionOptions.getUser(), connectionOptions.getPassword());
+    private Connection createConnection() {
+        try {
+            return DriverManager.getConnection(
+                    connectionOptions.getUrl(), connectionOptions.getUser(), connectionOptions.getPassword());
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private synchronized int getConnectionsCount() {
@@ -82,7 +86,7 @@ public final class JdbcFixedConnectionPoolFactoryImpl implements JdbcConnectionF
     }
 
     @Override
-    protected void finalize() {
+    public void closeOpenedConnections() {
         freeConnections.forEach(this::closeConnection);
         usedConnections.values().forEach(this::closeConnection);
     }
@@ -90,9 +94,8 @@ public final class JdbcFixedConnectionPoolFactoryImpl implements JdbcConnectionF
     private void closeConnection(Connection connection) {
         try {
             connection.close();
-            System.out.printf("Closed connection %s", connection);
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
 }
