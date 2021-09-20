@@ -23,4 +23,7 @@ public interface UserRepository {
 
     @Query("select nextval('public.usr_sequence')")
     Long getNextId();
+
+    @Query("DELETE FROM usr WHERE id = :id")
+    void deleteUserWithId(Long id);
 }

@@ -18,19 +18,16 @@ import org.and1ss.java_lab_1.domain.User;
 import org.and1ss.java_lab_1.repository.UserRepository;
 import org.and1ss.java_lab_1.service.UserService;
 import org.and1ss.java_lab_1.service.impl.UserServiceImpl;
+import org.and1ss.java_lab_1.util.PropertiesUtil;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.reflect.Proxy;
 import java.util.Properties;
 
 public class Application {
 
     public static void main(String[] args) throws IOException {
-        final Properties applicationProperties = new Properties();
-        final InputStream applicationPropertiesStream = Application.class.getClassLoader()
-                .getResourceAsStream("application.properties");
-        applicationProperties.load(applicationPropertiesStream);
+        final Properties applicationProperties = PropertiesUtil.loadProperties("application.properties");
 
         final JdbcConnectionOptions jdbcConnectionOptions = JdbcConnectionOptions.builder()
                 .url(String.format("jdbc:postgresql://%s", applicationProperties.getProperty("database.url")))
@@ -65,7 +62,16 @@ public class Application {
 
         final User userWithoutId = transactionalUserService.findUserById(101L).get();
         userWithoutId.setId(null);
-        System.out.println(transactionalUserService.save(userWithoutId));
+
+        System.out.println("--------- Saving user ---------\n");
+        final User savedUser = transactionalUserService.save(userWithoutId);
+        System.out.println(savedUser);
+
+        System.out.println("\n\n--------- After saving --------\n");
+        userRepository.findAllUsers().forEach(System.out::println);
+
+        userRepository.deleteUserWithId(savedUser.getId());
+        System.out.println("\n\n--------- After deletion ----------\n");
         userRepository.findAllUsers().forEach(System.out::println);
 
         jdbcConnectionFactory.closeOpenedConnections();

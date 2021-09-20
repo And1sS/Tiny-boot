@@ -5,6 +5,7 @@ import org.and1ss.java_lab_1.domain.User;
 import org.and1ss.java_lab_1.repository.UserRepository;
 import org.and1ss.java_lab_1.service.UserService;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -38,5 +39,20 @@ public class UserServiceImpl implements UserService {
         user.setId(resolvedUserId);
 
         return user;
+    }
+
+    @Override
+    public List<User> findUsersWithName(String firstName) {
+        return userRepository.findUsersWithName(firstName);
+    }
+
+    @Override
+    public List<User> findAllUsers() {
+        return userRepository.findAllUsers();
+    }
+
+    @Override
+    public void deleteUserWithId(Long id) {
+        userRepository.deleteUserWithId(id);
     }
 }
