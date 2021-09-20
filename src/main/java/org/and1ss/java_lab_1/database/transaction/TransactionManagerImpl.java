@@ -60,6 +60,11 @@ public class TransactionManagerImpl implements TransactionManager {
         wrapInRuntimeException(() -> connectionFactory.getConnection().rollback());
     }
 
+    @Override
+    public void closeTransaction() {
+        isInTransaction.remove();
+    }
+
     private void wrapInRuntimeException(SqlRunnable runnable) {
         try {
             runnable.run();

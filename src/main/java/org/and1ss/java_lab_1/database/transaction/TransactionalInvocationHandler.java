@@ -46,6 +46,7 @@ public class TransactionalInvocationHandler implements InvocationHandler {
             throw e;
         } finally {
             if (topLevelTransaction) {
+                transactionManager.closeTransaction();
                 connectionFactory.releaseConnection();
             }
         }

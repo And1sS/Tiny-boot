@@ -17,4 +17,6 @@ public interface TransactionManager {
     void commitTransaction();
 
     void rollbackTransaction();
+
+    void closeTransaction();
 }
