@@ -14,15 +14,15 @@ import org.and1ss.java_lab_1.database.annotations.Entity;
 @Entity
 public class User {
 
-    Long id;
+    private Long id;
 
-    String login;
+    private String login;
 
     @Column(name = "first_name")
-    String firstName;
+    private String firstName;
 
     @Column(name = "last_name")
-    String lastName;
+    private String lastName;
 
-    String password;
+    private String password;
 }
