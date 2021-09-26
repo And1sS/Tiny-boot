@@ -40,13 +40,15 @@ public final class JdbcFixedConnectionPoolFactoryImpl implements JdbcConnectionF
                 usedConnections.put(currentThread, connection);
                 return connection;
             }
-        }
 
-        while (true) {
-            synchronized (this) {
-                if (freeConnections.isEmpty()) continue;
-                return acquireConnection();
+            while (freeConnections.isEmpty()) {
+                try {
+                    wait();
+                } catch (InterruptedException e) {
+                    throw new RuntimeException("Could not acquire connection due to: " + e.getMessage());
+                }
             }
+            return acquireConnection();
         }
     }
 
@@ -55,6 +57,7 @@ public final class JdbcFixedConnectionPoolFactoryImpl implements JdbcConnectionF
         final Thread currentThread = Thread.currentThread();
         if (usedConnections.containsKey(currentThread)) {
             freeConnections.add(usedConnections.remove(currentThread));
+            notify();
         } else {
             throw new IllegalStateException(
                     String.format("No connections are associated with thread %s", currentThread));
