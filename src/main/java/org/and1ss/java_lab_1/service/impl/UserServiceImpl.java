@@ -1,6 +1,6 @@
 package org.and1ss.java_lab_1.service.impl;
 
-import org.and1ss.java_lab_1.database.annotations.Transactional;
+import org.and1ss.java_lab_1.framework.database.annotations.Transactional;
 import org.and1ss.java_lab_1.domain.User;
 import org.and1ss.java_lab_1.repository.UserRepository;
 import org.and1ss.java_lab_1.service.UserService;

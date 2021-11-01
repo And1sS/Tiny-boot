@@ -9,12 +9,17 @@
     <version>1.0-SNAPSHOT</version>
 
     <properties>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
         <tomcat.version>8.0.48</tomcat.version>
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>org.bigtesting</groupId>
+            <artifactId>routd</artifactId>
+            <version>1.0.7</version>
+        </dependency>
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-core</artifactId>

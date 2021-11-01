@@ -1,11 +1,17 @@
 package org.and1ss.java_lab_1;
 
-import org.and1ss.java_lab_1.web.DispatcherServlet;
-import org.and1ss.java_lab_1.web.RequestHandler;
-import org.and1ss.java_lab_1.web.RequestMappingInfo;
-import org.and1ss.java_lab_1.web.mapper.HandlerMapper;
-import org.and1ss.java_lab_1.web.mapper.HandlerMapperImpl;
-import org.and1ss.java_lab_1.web.registry.HandlerRegistry;
+import org.and1ss.java_lab_1.framework.web.DispatcherServlet;
+import org.and1ss.java_lab_1.framework.web.ResponseEntity;
+import org.and1ss.java_lab_1.framework.web.ResponseStatus;
+import org.and1ss.java_lab_1.framework.web.annotations.RestController;
+import org.and1ss.java_lab_1.framework.web.annotations.args.PathVariable;
+import org.and1ss.java_lab_1.framework.web.annotations.args.RequestBody;
+import org.and1ss.java_lab_1.framework.web.annotations.args.RequestParam;
+import org.and1ss.java_lab_1.framework.web.annotations.methods.GetMapping;
+import org.and1ss.java_lab_1.framework.web.annotations.methods.RequestMapping;
+import org.and1ss.java_lab_1.framework.web.mapper.HandlerMapper;
+import org.and1ss.java_lab_1.framework.web.mapper.HandlerMapperImpl;
+import org.and1ss.java_lab_1.framework.web.registry.HandlerRegistryImpl;
 import org.apache.catalina.Context;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.startup.Tomcat;
@@ -14,6 +20,7 @@ import javax.servlet.ServletException;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Map;
 
 public class Application {
 
@@ -67,24 +74,37 @@ public class Application {
 //
 //        jdbcConnectionFactory.closeOpenedConnections();
 
-        final HandlerRegistry handlerRegistry = new HandlerRegistry() {
-            @Override
-            public void registerHandler(RequestMappingInfo requestMappingInfo, RequestHandler requestHandler) {
+        final HandlerMapper handlerMapper = new HandlerMapperImpl(new HandlerRegistryImpl());
+        handlerMapper.registerHandler(new HelloController());
 
-            }
+        final Tomcat tomcat = getTomcat(8080, handlerMapper);
+        tomcat.start();
+        tomcat.getServer().await();
+    }
 
-            @Override
-            public RequestHandler getHandler(RequestMappingInfo requestMappingInfo) {
-                return null;
-            }
-        };
+    @RestController
+    @RequestMapping("/hello")
+    public static class HelloController {
 
-        final HandlerMapper handlerMapper = new HandlerMapperImpl(handlerRegistry);
+        @GetMapping("/:test/:id/1")
+        public ResponseEntity handleGet(@PathVariable("test") String test,
+                                        @PathVariable("id") String id,
+                                        @RequestParam(value = "test1", required = true) String test1,
+                                        @RequestBody String body) {
+
+            return ResponseEntity.builder()
+                    .statusCode(ResponseStatus.OK)
+                    .headers(Map.of())
+                    .body("<h1>IT WORKS!<h1>")
+                    .build();
+        }
+    }
+
+    private static Tomcat getTomcat(int port, HandlerMapper handlerMapper) {
         final DispatcherServlet dispatcherServlet = new DispatcherServlet(handlerMapper);
 
         final Tomcat tomcat = new Tomcat();
-        tomcat.setBaseDir("temp");
-        tomcat.setPort(8080);
+        tomcat.setPort(port);
 
         String contextPath = "";
         String docBase = new File(".").getAbsolutePath();
@@ -97,7 +117,6 @@ public class Application {
         tomcat.addServlet(contextPath, servletName, dispatcherServlet);
         context.addServletMappingDecoded(urlPattern, servletName);
 
-        tomcat.start();
-        tomcat.getServer().await();
+        return tomcat;
     }
 }
