@@ -1,103 +1,99 @@
 package org.and1ss.java_lab_1;
 
+import org.and1ss.java_lab_1.framework.database.connection.JdbcConnectionFactory;
+import org.and1ss.java_lab_1.framework.database.connection.JdbcConnectionOptions;
+import org.and1ss.java_lab_1.framework.database.connection.JdbcFixedConnectionPoolFactoryImpl;
+import org.and1ss.java_lab_1.framework.database.converters.JdbcLongTypeConverter;
+import org.and1ss.java_lab_1.framework.database.converters.JdbcStringTypeConverter;
+import org.and1ss.java_lab_1.framework.database.converters.JdbcTypeConverterRegistry;
+import org.and1ss.java_lab_1.framework.database.converters.JdbcTypeConverterRegistryImpl;
+import org.and1ss.java_lab_1.framework.database.mapper.ResultSetMapper;
+import org.and1ss.java_lab_1.framework.database.repository.RepositoryInvocationHandler;
+import org.and1ss.java_lab_1.framework.database.statement.JdbcStatementFactory;
+import org.and1ss.java_lab_1.framework.database.statement.JdbcStatementFactoryImpl;
+import org.and1ss.java_lab_1.framework.database.transaction.TransactionManager;
+import org.and1ss.java_lab_1.framework.database.transaction.TransactionManagerImpl;
+import org.and1ss.java_lab_1.framework.database.transaction.TransactionalUtil;
+import org.and1ss.java_lab_1.framework.util.PropertiesUtil;
 import org.and1ss.java_lab_1.framework.web.DispatcherServlet;
-import org.and1ss.java_lab_1.framework.web.ResponseEntity;
-import org.and1ss.java_lab_1.framework.web.ResponseStatus;
-import org.and1ss.java_lab_1.framework.web.annotations.RestController;
-import org.and1ss.java_lab_1.framework.web.annotations.args.PathVariable;
-import org.and1ss.java_lab_1.framework.web.annotations.args.RequestBody;
-import org.and1ss.java_lab_1.framework.web.annotations.args.RequestParam;
-import org.and1ss.java_lab_1.framework.web.annotations.methods.GetMapping;
-import org.and1ss.java_lab_1.framework.web.annotations.methods.RequestMapping;
 import org.and1ss.java_lab_1.framework.web.mapper.HandlerMapper;
 import org.and1ss.java_lab_1.framework.web.mapper.HandlerMapperImpl;
 import org.and1ss.java_lab_1.framework.web.registry.HandlerRegistryImpl;
+import org.and1ss.java_lab_1.repository.UserRepository;
+import org.and1ss.java_lab_1.resource.UserResource;
+import org.and1ss.java_lab_1.service.UserService;
+import org.and1ss.java_lab_1.service.impl.UserServiceImpl;
 import org.apache.catalina.Context;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.startup.Tomcat;
 
-import javax.servlet.ServletException;
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.util.Map;
+import java.lang.reflect.Proxy;
+import java.util.Properties;
 
 public class Application {
 
-    public static void main(String[] args) throws IOException, ServletException, LifecycleException, InvocationTargetException, IllegalAccessException {
-//        final Properties applicationProperties = PropertiesUtil.loadProperties("application.properties");
-//
-//        final JdbcConnectionOptions jdbcConnectionOptions = JdbcConnectionOptions.builder()
-//                .url(String.format("jdbc:postgresql://%s", applicationProperties.getProperty("database.url")))
-//                .user(applicationProperties.getProperty("database.user"))
-//                .password(applicationProperties.getProperty("database.password"))
-//                .build();
-//
-//        final JdbcConnectionFactory jdbcConnectionFactory =
-//                new JdbcFixedConnectionPoolFactoryImpl(10, jdbcConnectionOptions);
-//        final JdbcStatementFactory jdbcStatementFactory = new JdbcStatementFactoryImpl(jdbcConnectionFactory);
-//
-//        final TransactionManager transactionManager = new TransactionManagerImpl(jdbcConnectionFactory);
-//
-//        final JdbcTypeConverterRegistry jdbcTypeConverterRegistry = new JdbcTypeConverterRegistryImpl()
-//                .registerTypeConverter(new JdbcStringTypeConverter())
-//                .registerTypeConverter(new JdbcLongTypeConverter());
-//
-//        final UserRepository userRepository = (UserRepository) Proxy.newProxyInstance(
-//                UserRepository.class.getClassLoader(),
-//                new Class[]{UserRepository.class},
-//                new RepositoryInvocationHandler(
-//                        jdbcStatementFactory,
-//                        new ResultSetMapper(jdbcTypeConverterRegistry),
-//                        (a, b, c) -> null,
-//                        jdbcTypeConverterRegistry));
-//
-//        final UserService transactionalUserService = TransactionalUtil.wrapInTransaction(
-//                new UserServiceImpl(userRepository),
-//                UserService.class,
-//                jdbcConnectionFactory,
-//                transactionManager);
+    public static void main(String[] args) throws IOException, LifecycleException {
+        final Properties applicationProperties = PropertiesUtil.loadProperties("application.properties");
+        final JdbcConnectionOptions jdbcConnectionOptions = getJdbcConnectionOptions(applicationProperties);
 
-//        final User userWithoutId = transactionalUserService.findUserById(101L).get();
-//        userWithoutId.setId(null);
-//
-//        System.out.println("--------- Saving user ---------\n");
-//        final User savedUser = transactionalUserService.save(userWithoutId);
-//        System.out.println(savedUser);
-//
-//        System.out.println("\n\n--------- After saving --------\n");
-//        userRepository.findAllUsers().forEach(System.out::println);
-//
-//        userRepository.deleteUserWithId(savedUser.getId());
-//        System.out.println("\n\n--------- After deletion ----------\n");
-//        userRepository.findAllUsers().forEach(System.out::println);
-//
-//        jdbcConnectionFactory.closeOpenedConnections();
+        final JdbcConnectionFactory jdbcConnectionFactory =
+                new JdbcFixedConnectionPoolFactoryImpl(10, jdbcConnectionOptions);
+        final JdbcStatementFactory jdbcStatementFactory = new JdbcStatementFactoryImpl(jdbcConnectionFactory);
+        final JdbcTypeConverterRegistry jdbcTypeConverterRegistry = getJdbcConverterRegistry();
+
+        final TransactionManager transactionManager = new TransactionManagerImpl(jdbcConnectionFactory);
+        final ResultSetMapper resultSetMapper = new ResultSetMapper(jdbcTypeConverterRegistry);
+
+        final UserService userService = getUserService(
+                jdbcConnectionFactory,
+                jdbcStatementFactory,
+                resultSetMapper,
+                jdbcTypeConverterRegistry,
+                transactionManager);
+
 
         final HandlerMapper handlerMapper = new HandlerMapperImpl(new HandlerRegistryImpl());
-        handlerMapper.registerHandler(new HelloController());
+        handlerMapper.registerHandler(new UserResource(userService));
 
         final Tomcat tomcat = getTomcat(8080, handlerMapper);
         tomcat.start();
         tomcat.getServer().await();
+        jdbcConnectionFactory.closeOpenedConnections();
     }
 
-    @RestController
-    @RequestMapping("/hello")
-    public static class HelloController {
+    private static JdbcTypeConverterRegistry getJdbcConverterRegistry() {
+        return new JdbcTypeConverterRegistryImpl()
+                .registerTypeConverter(new JdbcStringTypeConverter())
+                .registerTypeConverter(new JdbcLongTypeConverter());
+    }
 
-        @GetMapping("/:test/:id/1")
-        public ResponseEntity handleGet(@PathVariable("test") String test,
-                                        @PathVariable("id") String id,
-                                        @RequestParam(value = "test1", required = true) String test1,
-                                        @RequestBody String body) {
+    private static JdbcConnectionOptions getJdbcConnectionOptions(Properties applicationProperties) {
+        return JdbcConnectionOptions.builder()
+                .url(String.format("jdbc:postgresql://%s", applicationProperties.getProperty("database.url")))
+                .user(applicationProperties.getProperty("database.user"))
+                .password(applicationProperties.getProperty("database.password"))
+                .build();
+    }
 
-            return ResponseEntity.builder()
-                    .statusCode(ResponseStatus.OK)
-                    .headers(Map.of())
-                    .body("<h1>IT WORKS!<h1>")
-                    .build();
-        }
+    private static UserService getUserService(JdbcConnectionFactory jdbcConnectionFactory,
+                                              JdbcStatementFactory jdbcStatementFactory,
+                                              ResultSetMapper resultSetMapper,
+                                              JdbcTypeConverterRegistry jdbcTypeConverterRegistry,
+                                              TransactionManager transactionManager) {
+
+        final UserRepository userRepository = (UserRepository) Proxy.newProxyInstance(
+                UserRepository.class.getClassLoader(),
+                new Class[]{UserRepository.class},
+                new RepositoryInvocationHandler(
+                        jdbcStatementFactory, resultSetMapper, (a, b, c) -> null, jdbcTypeConverterRegistry));
+
+        return TransactionalUtil.wrapInTransaction(
+                new UserServiceImpl(userRepository),
+                UserService.class,
+                jdbcConnectionFactory,
+                transactionManager);
     }
 
     private static Tomcat getTomcat(int port, HandlerMapper handlerMapper) {

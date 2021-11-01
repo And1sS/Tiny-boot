@@ -85,16 +85,32 @@ public class HandlerMapperImpl implements HandlerMapper {
     }
 
     private RequestMappingInfo getRequestMappingInfo(Annotation mappingAnnotation) {
-        return switch (mappingAnnotation) {
-            case RequestMapping rm -> RequestMappingInfo.of(rm.value(), rm.method());
-            case GetMapping gm -> RequestMappingInfo.of(gm.value(), MethodType.GET);
-            case PostMapping pm -> RequestMappingInfo.of(pm.value(), MethodType.POST);
-            case PutMapping pm -> RequestMappingInfo.of(pm.value(), MethodType.PUT);
-            case PatchMapping pm -> RequestMappingInfo.of(pm.value(), MethodType.PATCH);
-            case DeleteMapping dm -> RequestMappingInfo.of(dm.value(), MethodType.DELETE);
-            default -> throw new IllegalStateException(
+        if (mappingAnnotation instanceof RequestMapping) {
+            final RequestMapping rm = (RequestMapping) mappingAnnotation;
+            return RequestMappingInfo.of(rm.value(), rm.method());
+        } else if (mappingAnnotation instanceof GetMapping) {
+            return RequestMappingInfo.of(((GetMapping) mappingAnnotation).value(), MethodType.GET);
+        } else if (mappingAnnotation instanceof PostMapping) {
+            return RequestMappingInfo.of(((PostMapping) mappingAnnotation).value(), MethodType.POST);
+        } else if (mappingAnnotation instanceof PutMapping) {
+            return RequestMappingInfo.of(((PutMapping) mappingAnnotation).value(), MethodType.PUT);
+        } else if (mappingAnnotation instanceof PatchMapping) {
+            return RequestMappingInfo.of(((PatchMapping) mappingAnnotation).value(), MethodType.PATCH);
+        } else if (mappingAnnotation instanceof DeleteMapping) {
+            return RequestMappingInfo.of(((DeleteMapping) mappingAnnotation).value(), MethodType.DELETE);
+        }
+        throw new IllegalStateException(
                     "Illegal annotation passed to be resolved as Mapping Annotation: " + mappingAnnotation);
-        };
+//        return switch (mappingAnnotation) {
+//            case RequestMapping rm -> RequestMappingInfo.of(rm.value(), rm.method());
+//            case GetMapping gm -> RequestMappingInfo.of(gm.value(), MethodType.GET);
+//            case PostMapping pm -> RequestMappingInfo.of(pm.value(), MethodType.POST);
+//            case PutMapping pm -> RequestMappingInfo.of(pm.value(), MethodType.PUT);
+//            case PatchMapping pm -> RequestMappingInfo.of(pm.value(), MethodType.PATCH);
+//            case DeleteMapping dm -> RequestMappingInfo.of(dm.value(), MethodType.DELETE);
+//            default -> throw new IllegalStateException(
+//                    "Illegal annotation passed to be resolved as Mapping Annotation: " + mappingAnnotation);
+//        };
     }
 
     private void validatePath(String path) {

@@ -32,8 +32,14 @@ public class HandlerRegistryImpl implements HandlerRegistry {
 
     @Override
     public RequestHandler getHandler(RequestMappingInfo requestMappingInfo) {
-        final String path = router.route(requestMappingInfo.getPath()).getResourcePath();
-        return mappingInfoToRequestHandler.get(RequestMappingInfo.of(path, requestMappingInfo.getMethodType()));
+        final Route route = router.route(requestMappingInfo.getPath());
+        if (route == null) {
+            throw new IllegalArgumentException("Method not allowed: " + requestMappingInfo);
+        }
+
+        final RequestMappingInfo resolvedMappingInfo =
+                RequestMappingInfo.of(route.getResourcePath(), requestMappingInfo.getMethodType());
+        return mappingInfoToRequestHandler.get(resolvedMappingInfo);
     }
 
     @Override

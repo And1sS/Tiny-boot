@@ -11,6 +11,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class DispatcherServlet extends HttpServlet {
@@ -30,13 +31,13 @@ public class DispatcherServlet extends HttpServlet {
         } catch (IllegalArgumentException e) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 
-            final String errorMessage = e.toString();
+            final String errorMessage = Optional.ofNullable(e.getMessage()).orElse(e.toString());
             response.setContentLength(errorMessage.length());
             response.getWriter().print(errorMessage);
         } catch (Throwable e) {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
 
-            final String errorMessage = e.toString();
+            final String errorMessage = Optional.ofNullable(e.getMessage()).orElse(e.toString());
             response.setContentLength(errorMessage.length());
             response.getWriter().print(errorMessage);
         }
