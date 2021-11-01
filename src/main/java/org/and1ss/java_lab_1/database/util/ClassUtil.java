@@ -1,12 +1,11 @@
 package org.and1ss.java_lab_1.database.util;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.Set;
 
 public class ClassUtil {
 
-    private static final List<Class<?>> PRIMITIVE_WRAPPER_CLASSES =
-            Arrays.asList(
+    private static final Set<Class<?>> PRIMITIVE_WRAPPER_CLASSES =
+            Set.of(
                     Boolean.class, Byte.class,
                     Character.class, Double.class,
                     Float.class, Integer.class,
