@@ -7,9 +7,9 @@ Tiny boot contains Spring like MVC framework and simple ORM(a bit like Spring Da
 
 ## MVC
 This MVC framework implementation contains:
-- Request routing based on http url and methods. (https://github.com/And1sS/Tiny-boot/tree/master/src/main/java/org/and1ss/tinyboot/framework/web/mapper)
-- Handlers registry. (https://github.com/And1sS/Tiny-boot/tree/master/src/main/java/org/and1ss/tinyboot/framework/web/registry)
-- Dispatcher servlet which combines everything together. (https://github.com/And1sS/Tiny-boot/blob/master/src/main/java/org/and1ss/tinyboot/framework/web/DispatcherServlet.java)
+- Request routing based on http url and methods. [Implementation here](src/main/java/org/and1ss/tinyboot/framework/web/mapper)
+- Handlers registry. [Implementation here](src/main/java/org/and1ss/tinyboot/framework/web/registry)
+- Dispatcher servlet which combines everything together. [Implementation here](src/main/java/org/and1ss/tinyboot/framework/web/DispatcherServlet.java)
 
 To define simple REST handler you need to create class, annotate it with @RestController and create some public handler methods.</br>
 For example: 
@@ -47,15 +47,15 @@ handlerMapper.registerHandler(new UserResource(userService));
 final Tomcat tomcat = getTomcat(8080, handlerMapper);
 ```
 Just like in Spring MVC, but with reduced functionality.
-Full example can be found at: https://github.com/And1sS/Tiny-boot/blob/master/src/main/java/org/and1ss/tinyboot/resource/UserResource.java
+Full example can be found at: [UserResource.java](src/main/java/org/and1ss/tinyboot/resource/UserResource.java).
 
 ## ORM
 My implementation of simple orm contains:
-- Fixed size JDBC connections pool. (https://github.com/And1sS/Tiny-boot/tree/master/src/main/java/org/and1ss/tinyboot/framework/database/connection)
-- Jdbc Types converters and their registry. (https://github.com/And1sS/Tiny-boot/tree/master/src/main/java/org/and1ss/tinyboot/framework/database/converters)
+- Fixed size JDBC connections pool. [Implementation here](src/main/java/org/and1ss/tinyboot/framework/database/connection)
+- Jdbc Types converters and their registry. [Implementation here](src/main/java/org/and1ss/tinyboot/framework/database/converters)
 - Entity mapping with @Entity, @Table, @Column just like in JPA. (no relationships mapping implemented for now).
-- Spring-like Repository interfaces with @Query methods and arguments, Entity mapping. (https://github.com/And1sS/Tiny-boot/tree/master/src/main/java/org/and1ss/tinyboot/framework/database/repository)
-- Spring-like thread bound @Transactional capabilities with transaction propagation and inner transactions managed by Transaction Manager(https://github.com/And1sS/Tiny-boot/tree/master/src/main/java/org/and1ss/tinyboot/framework/database/repository).
+- Spring-like Repository interfaces with @Query methods and arguments, Entity mapping. [Implementation here](src/main/java/org/and1ss/tinyboot/framework/database/repository)
+- Spring-like thread bound @Transactional capabilities with transaction propagation and inner transactions managed by Transaction Manager. [Implementation here](src/main/java/org/and1ss/tinyboot/framework/database/transaction).
 
 To define simple repository and connect it to the database you need to: </br>
 1. create interface with @Query methods and annotate it with @Repository.
@@ -156,5 +156,5 @@ TransactionalUtil.wrapInTransaction(
                 transactionManager)
 ```
 
-Full example can be found in this repository under domain, repository, resource and service packages + Application.java.
+Full example can be found in this repository under [domain](src/main/java/org/and1ss/tinyboot/domain), [repository](src/main/java/org/and1ss/tinyboot/repository), [resource](src/main/java/org/and1ss/tinyboot/resource) and [service](src/main/java/org/and1ss/tinyboot/service) packages + [Application.java](src/main/java/org/and1ss/tinyboot/Application.java).
 
