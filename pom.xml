@@ -70,7 +70,7 @@
                         <manifest>
                             <addClasspath>true</addClasspath>
                             <classpathPrefix>lib/</classpathPrefix>
-                            <mainClass>org.and1ss.java_lab_1.Application</mainClass>
+                            <mainClass>org.and1ss.tinyboot.Application</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -103,7 +103,7 @@
                         <manifest>
                             <addClasspath>true</addClasspath>
                             <classpathPrefix>lib/</classpathPrefix>
-                            <mainClass>org.and1ss.java_lab_1.Application</mainClass>
+                            <mainClass>org.and1ss.tinyboot.Application</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
